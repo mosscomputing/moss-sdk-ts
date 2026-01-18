@@ -4,6 +4,8 @@ TypeScript SDK for MOSS - Cryptographic signing for AI agent outputs.
 
 **Unsigned agent output is broken output.**
 
+[![npm](https://img.shields.io/npm/v/@moss/sdk)](https://www.npmjs.com/package/@moss/sdk)
+
 ## Installation
 
 ```bash
@@ -32,13 +34,14 @@ const envelope = await sign({
 ```typescript
 import { verify } from '@moss/sdk';
 
+// Verify - no network required
 const result = await verify(envelope);
 
 if (result.valid) {
   console.log(`Signed by: ${result.agentId}`);
   console.log(`At: ${new Date(envelope.timestamp * 1000)}`);
 } else {
-  console.log(`⚠️ Signature invalid: ${result.reason}`);
+  console.log(`Invalid: ${result.reason}`);
 }
 ```
 
@@ -55,6 +58,19 @@ const envelope = await sign({
 // Later, verify the envelope
 const result = await envelope.verify();
 console.log(result.valid); // true if untampered
+```
+
+## Execution Record
+
+Each signed output produces a verifiable execution record:
+
+```
+agent_id:      agent-finance-01
+timestamp:     2026-01-18T12:34:56Z
+sequence:      1
+payload_hash:  SHA-256:abc123...
+signature:     ML-DSA-44:xyz789...
+status:        VERIFIED
 ```
 
 ## API
@@ -120,14 +136,17 @@ interface Envelope {
 - **Framework Agnostic**: Works with any AI framework
 - **TypeScript Native**: Full type definitions included
 
-## Security
+## Evidence Retention
 
-MOSS uses ML-DSA-44 (Dilithium) for post-quantum secure signatures:
+Free tier provides runtime enforcement only. Production environments require retained, verifiable execution records.
 
-- Resistant to quantum computer attacks
-- NIST FIPS 204 standardized
-- ~2.4KB signatures
-- Fast verification
+See [mosscomputing.com](https://mosscomputing.com) for evidence continuity options.
+
+## Links
+
+- [mosscomputing.com](https://mosscomputing.com) - Project site
+- [app.mosscomputing.com](https://app.mosscomputing.com) - Dashboard
+- [moss-sdk (Python)](https://pypi.org/project/moss-sdk/) - Python SDK
 
 ## License
 
