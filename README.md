@@ -136,11 +136,17 @@ interface Envelope {
 - **Framework Agnostic**: Works with any AI framework
 - **TypeScript Native**: Full type definitions included
 
-## Evidence Retention
+## Pricing Tiers
 
-Free tier provides runtime enforcement only. Production environments require retained, verifiable execution records.
+| Tier | Price | Agents | Signatures | Retention |
+|------|-------|--------|------------|-----------|
+| **Free** | $0 | 5 | 1,000/day | 7 days |
+| **Pro** | $1,499/mo | Unlimited | Unlimited | 1 year |
+| **Enterprise** | Custom | Unlimited | Unlimited | 7 years |
 
-See [mosscomputing.com](https://mosscomputing.com) for evidence continuity options.
+*Annual billing: $1,249/mo (save $3,000/year)*
+
+All new signups get a **14-day free trial** of Pro.
 
 ## Links
 
