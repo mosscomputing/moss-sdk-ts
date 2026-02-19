@@ -433,8 +433,6 @@ export {
   SPEC,
   VERSION,
   ALG,
-  createSubject,
-  getOrCreateSubject,
 };
 
 export default {

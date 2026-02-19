@@ -1,5 +1,5 @@
 {
-  "name": "@moss/sdk",
+  "name": "moss-signing",
   "version": "0.1.0",
   "description": "MOSS SDK for TypeScript - Cryptographic signing for AI agent outputs",
   "main": "dist/index.js",
