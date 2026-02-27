@@ -92,17 +92,56 @@ export interface Subject {
 }
 
 // =============================================================================
+// Enterprise Types
+// =============================================================================
+
+export interface HandshakeResult {
+  /** Whether the agent is certified in MOSS Master Registry */
+  isCertified: boolean;
+  /** Certification status: 'certified' or 'unregistered' */
+  certificationStatus: string;
+  /** Organization ID */
+  orgId?: string;
+  /** Subscription tier */
+  tier?: string;
+  /** Error message if handshake failed */
+  error?: string;
+}
+
+export interface SignResult {
+  /** The cryptographic envelope */
+  envelope: Envelope;
+  /** Whether the agent is certified */
+  isCertified: boolean;
+  /** Certification status */
+  certificationStatus: string;
+}
+
+// =============================================================================
 // Constants
 // =============================================================================
 
 const SPEC = 'moss-0001';
 const VERSION = 1;
 const ALG = 'ML-DSA-44';
+const SDK_VERSION = '0.1.0';
+
+// Environment configuration
+const MOSS_API_URL = typeof process !== 'undefined' 
+  ? (process.env?.MOSS_API_URL || 'https://api.mosscomputing.com')
+  : 'https://api.mosscomputing.com';
+
+const MOSS_API_KEY = typeof process !== 'undefined'
+  ? process.env?.MOSS_API_KEY
+  : undefined;
 
 // In-memory storage for demo/development
 // In production, use secure key storage
 const subjects = new Map<string, Subject>();
 const sequences = new Map<string, number>();
+
+// Certification cache
+const certificationCache = new Map<string, boolean>();
 
 // =============================================================================
 // Cryptographic Functions
@@ -426,6 +465,141 @@ export async function verify(
 }
 
 // =============================================================================
+// Enterprise Functions
+// =============================================================================
+
+/**
+ * Check if enterprise mode is enabled.
+ */
+export function isEnterpriseMode(): boolean {
+  return !!MOSS_API_KEY;
+}
+
+/**
+ * Perform registry handshake to check agent certification.
+ * 
+ * This validates the API key and checks if the agent is registered
+ * in the MOSS Master Registry. Only certified agents can have
+ * signatures marked as isCertified: true.
+ * 
+ * @example
+ * ```typescript
+ * const result = await handshake("my-agent");
+ * if (result.isCertified) {
+ *   console.log("Agent is certified!");
+ * }
+ * ```
+ */
+export async function handshake(agentId: string): Promise<HandshakeResult> {
+  if (!isEnterpriseMode()) {
+    return {
+      isCertified: false,
+      certificationStatus: 'unregistered',
+      error: 'Enterprise mode not enabled (MOSS_API_KEY not set)',
+    };
+  }
+
+  // Check cache
+  if (certificationCache.has(agentId)) {
+    const isCertified = certificationCache.get(agentId)!;
+    return {
+      isCertified,
+      certificationStatus: isCertified ? 'certified' : 'unregistered',
+    };
+  }
+
+  try {
+    const response = await fetch(`${MOSS_API_URL}/v1/registry/handshake`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${MOSS_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        agent_id: agentId,
+        sdk_version: SDK_VERSION,
+        sdk_language: 'typescript',
+      }),
+    });
+
+    if (!response.ok) {
+      return {
+        isCertified: false,
+        certificationStatus: 'unregistered',
+        error: `API error: ${response.status}`,
+      };
+    }
+
+    const data = await response.json();
+    const isCertified = data.is_certified || false;
+    
+    // Cache the result
+    certificationCache.set(agentId, isCertified);
+
+    return {
+      isCertified,
+      certificationStatus: data.certification_status || 'unregistered',
+      orgId: data.org_id,
+      tier: data.tier,
+    };
+  } catch (error) {
+    return {
+      isCertified: false,
+      certificationStatus: 'unregistered',
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Check if an agent is certified (from cache).
+ */
+export function isAgentCertified(agentId: string): boolean {
+  return certificationCache.get(agentId) || false;
+}
+
+/**
+ * Clear the certification cache.
+ */
+export function clearCertificationCache(): void {
+  certificationCache.clear();
+}
+
+/**
+ * Sign with enterprise features - returns SignResult with certification status.
+ * 
+ * @example
+ * ```typescript
+ * const result = await signWithCertification({
+ *   output: agentResponse,
+ *   agentId: "my-agent"
+ * });
+ * 
+ * console.log(`Certified: ${result.isCertified}`);
+ * console.log(`Signature: ${result.envelope.signature}`);
+ * ```
+ */
+export async function signWithCertification(options: SignOptions): Promise<SignResult> {
+  const envelope = await sign(options);
+  
+  // Check certification
+  let isCertified = false;
+  let certificationStatus = 'unregistered';
+  
+  if (isEnterpriseMode()) {
+    const handshakeResult = await handshake(options.agentId);
+    isCertified = handshakeResult.isCertified;
+    certificationStatus = handshakeResult.certificationStatus;
+  }
+  
+  return {
+    envelope,
+    isCertified,
+    certificationStatus,
+  };
+}
+
+// =============================================================================
 // Exports
 // =============================================================================
 
@@ -433,11 +607,17 @@ export {
   SPEC,
   VERSION,
   ALG,
+  SDK_VERSION,
 };
 
 export default {
   sign,
+  signWithCertification,
   verify,
+  handshake,
+  isEnterpriseMode,
+  isAgentCertified,
+  clearCertificationCache,
   createSubject,
   getOrCreateSubject,
 };
