@@ -6,22 +6,17 @@
  * 
  * @example
  * ```typescript
- * import { sign, verify } from '@moss/sdk';
+ * import { generateKeyPair, sign, verify } from '@moss/sdk';
  * 
- * const envelope = await sign({
- *   output: agentResponse,
- *   agentId: "agent-finance-01",
- *   context: { userId: user.id, action: "transfer" }
- * });
- * 
- * // envelope.signature: ML-DSA-44 post-quantum signature
- * // envelope.timestamp: Signed timestamp
- * // envelope.verify(): Returns true if untampered
+ * const keyPair = await generateKeyPair();
+ * const signature = await sign(payload, keyPair.secretKey);
+ * const valid = await verify(payload, keyPair.publicKey, signature);
  * ```
  */
 
+import { ml_dsa44 } from '@noble/post-quantum/ml-dsa.js';
 import { sha256 } from '@noble/hashes/sha256';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { bytesToHex } from '@noble/hashes/utils';
 
 // =============================================================================
 // Types
@@ -144,71 +139,49 @@ const sequences = new Map<string, number>();
 const certificationCache = new Map<string, boolean>();
 
 // =============================================================================
-// Cryptographic Functions
+// Cryptographic Functions (ML-DSA-44 / FIPS 204)
 // =============================================================================
 
 /**
  * Generate a new ML-DSA-44 keypair.
- * 
- * Note: This is a placeholder. In production, use a proper ML-DSA implementation
- * such as @noble/post-quantum when available, or call a backend service.
+ *
+ * Produces a keypair with the canonical FIPS 204 parameter sizes:
+ * - publicKey: 1312 bytes
+ * - secretKey: 2560 bytes
+ *
+ * Uses @noble/post-quantum ml-dsa-44 implementation.
  */
-async function generateKeyPair(): Promise<KeyPair> {
-  // For now, generate random bytes as placeholder
-  // Real implementation would use ML-DSA-44 (Dilithium2)
-  const publicKey = new Uint8Array(1312);
-  const secretKey = new Uint8Array(2560);
-  
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(publicKey);
-    crypto.getRandomValues(secretKey);
-  } else {
-    // Node.js fallback
-    const { randomBytes } = await import('crypto');
-    const pub = randomBytes(1312);
-    const sec = randomBytes(2560);
-    publicKey.set(pub);
-    secretKey.set(sec);
-  }
-  
-  return { publicKey, secretKey };
+export async function generateKeyPair(): Promise<KeyPair> {
+  const keyPair = ml_dsa44.keygen();
+  return {
+    publicKey: keyPair.publicKey,
+    secretKey: keyPair.secretKey,
+  };
 }
 
 /**
  * Sign a message with ML-DSA-44.
- * 
- * Note: Placeholder implementation. In production, use proper ML-DSA.
+ *
+ * Produces a 2420-byte post-quantum signature (FIPS 204 ML-DSA-44).
+ *
+ * @param payload - The message bytes to sign
+ * @param secretKey - The ML-DSA-44 secret key (2560 bytes)
+ * @returns A 2420-byte ML-DSA-44 signature
  */
-async function signMessage(secretKey: Uint8Array, message: Uint8Array): Promise<Uint8Array> {
-  // Placeholder: HMAC-like signature using SHA-256
-  // Real implementation would use ML-DSA-44 signing
-  const combined = new Uint8Array(secretKey.length + message.length);
-  combined.set(secretKey);
-  combined.set(message, secretKey.length);
-  
-  const hash = sha256(combined);
-  
-  // Pad to expected signature length (2420 bytes for ML-DSA-44)
-  const signature = new Uint8Array(2420);
-  signature.set(hash);
-  
-  return signature;
+export async function sign(payload: Uint8Array, secretKey: Uint8Array): Promise<Uint8Array> {
+  return ml_dsa44.sign(payload, secretKey);
 }
 
 /**
  * Verify a signature with ML-DSA-44.
- * 
- * Note: Placeholder implementation. In production, use proper ML-DSA.
+ *
+ * @param payload - The original message bytes
+ * @param publicKey - The ML-DSA-44 public key (1312 bytes)
+ * @param signature - The 2420-byte ML-DSA-44 signature to verify
+ * @returns true if the signature is valid, false otherwise
  */
-async function verifySignature(
-  publicKey: Uint8Array,
-  message: Uint8Array,
-  signature: Uint8Array
-): Promise<boolean> {
-  // Placeholder verification
-  // Real implementation would use ML-DSA-44 verification
-  // For demo purposes, always return true if signature is present
-  return signature.length === 2420;
+export async function verify(payload: Uint8Array, publicKey: Uint8Array, signature: Uint8Array): Promise<boolean> {
+  return ml_dsa44.verify(signature, payload, publicKey);
 }
 
 // =============================================================================
@@ -283,15 +256,16 @@ export async function getOrCreateSubject(agentId: string): Promise<Subject> {
 // =============================================================================
 
 /**
- * Sign any agent output with MOSS.
+ * Sign any agent output with MOSS, producing a cryptographic envelope.
  * 
  * This is the simplest way to add cryptographic attribution to agent outputs.
+ * The envelope contains a real ML-DSA-44 (FIPS 204) post-quantum signature.
  * 
  * @example
  * ```typescript
- * import { sign } from '@moss/sdk';
+ * import { signEnvelope } from '@moss/sdk';
  * 
- * const envelope = await sign({
+ * const envelope = await signEnvelope({
  *   output: agentResponse,
  *   agentId: "agent-finance-01",
  *   context: { userId: user.id, action: "transfer" }
@@ -302,7 +276,7 @@ export async function getOrCreateSubject(agentId: string): Promise<Subject> {
  * // envelope.verify(): Returns true if untampered
  * ```
  */
-export async function sign(options: SignOptions): Promise<Envelope> {
+export async function signEnvelope(options: SignOptions): Promise<Envelope> {
   const { output, agentId, context } = options;
   
   // Get or create subject
@@ -339,8 +313,8 @@ export async function sign(options: SignOptions): Promise<Envelope> {
   
   const signedBytes = new TextEncoder().encode(canonicalJson(signedBytesObj));
   
-  // Sign
-  const signatureBytes = await signMessage(subject.secretKey, signedBytes);
+  // Sign with real ML-DSA-44
+  const signatureBytes = await sign(signedBytes, subject.secretKey);
   const signature = base64UrlEncode(signatureBytes);
   
   // Create envelope with verify method
@@ -358,7 +332,7 @@ export async function sign(options: SignOptions): Promise<Envelope> {
     get agentId() { return this.subject; },
     get timestamp() { return this.issuedAt; },
     // Verify method
-    verify: async () => verify(envelope),
+    verify: async () => verifyEnvelope(envelope),
   };
   
   return envelope;
@@ -369,9 +343,9 @@ export async function sign(options: SignOptions): Promise<Envelope> {
  * 
  * @example
  * ```typescript
- * import { verify } from '@moss/sdk';
+ * import { verifyEnvelope } from '@moss/sdk';
  * 
- * const result = await verify(envelope);
+ * const result = await verifyEnvelope(envelope);
  * 
  * if (result.valid) {
  *   console.log(`Signed by: ${result.agentId}`);
@@ -380,7 +354,7 @@ export async function sign(options: SignOptions): Promise<Envelope> {
  * }
  * ```
  */
-export async function verify(
+export async function verifyEnvelope(
   envelope: Envelope | Record<string, unknown>
 ): Promise<VerifyResult> {
   try {
@@ -432,12 +406,8 @@ export async function verify(
     const signedBytes = new TextEncoder().encode(canonicalJson(signedBytesObj));
     const signatureBytes = base64UrlDecode(signature);
     
-    // Verify signature
-    const valid = await verifySignature(
-      storedSubject.publicKey,
-      signedBytes,
-      signatureBytes
-    );
+    // Verify signature with real ML-DSA-44
+    const valid = await verify(signedBytes, storedSubject.publicKey, signatureBytes);
     
     if (!valid) {
       return {
@@ -580,7 +550,7 @@ export function clearCertificationCache(): void {
  * ```
  */
 export async function signWithCertification(options: SignOptions): Promise<SignResult> {
-  const envelope = await sign(options);
+  const envelope = await signEnvelope(options);
   
   // Check certification
   let isCertified = false;
@@ -611,9 +581,12 @@ export {
 };
 
 export default {
+  generateKeyPair,
   sign,
-  signWithCertification,
   verify,
+  signEnvelope,
+  verifyEnvelope,
+  signWithCertification,
   handshake,
   isEnterpriseMode,
   isAgentCertified,

@@ -1,10 +1,20 @@
-# @moss/sdk
+# moss-sdk-ts
 
-TypeScript SDK for MOSS - Cryptographic signing for AI agent outputs.
-
-**Unsigned agent output is broken output.**
+MOSS SDK for TypeScript - cryptographic signing for AI agent actions.
 
 [![npm](https://img.shields.io/npm/v/@moss/sdk)](https://www.npmjs.com/package/@moss/sdk)
+
+## Overview
+
+MOSS provides cryptographic signing for AI agent outputs using ML-DSA-44, a post-quantum digital signature algorithm standardized in NIST FIPS 204. Every agent action is signed to create non-repudiable execution records with audit-grade provenance. Unsigned agent output is broken output.
+
+### ML-DSA-44 Parameter Sizes (FIPS 204)
+
+| Parameter | Size |
+|-----------|------|
+| Public Key | 1312 bytes |
+| Secret Key | 2560 bytes |
+| Signature | 2420 bytes |
 
 ## Installation
 
@@ -15,69 +25,60 @@ npm install @moss/sdk
 ## Quick Start
 
 ```typescript
-import { sign, verify } from '@moss/sdk';
+import { generateKeyPair, sign, verify } from '@moss/sdk';
 
-// Sign any agent output
-const envelope = await sign({
-  output: agentResponse,
-  agentId: "agent-finance-01",
-  context: { userId: user.id, action: "transfer" }
-});
+// Generate a keypair
+const keyPair = await generateKeyPair();
 
-// envelope.signature: ML-DSA-44 post-quantum signature
-// envelope.timestamp: Signed timestamp
-// envelope.verify(): Returns true if untampered
-```
-
-## Verification
-
-```typescript
-import { verify } from '@moss/sdk';
+// Sign a payload
+const payload = new TextEncoder().encode('agent action output');
+const signature = await sign(payload, keyPair.secretKey);
 
 // Verify - no network required
-const result = await verify(envelope);
-
-if (result.valid) {
-  console.log(`Signed by: ${result.agentId}`);
-  console.log(`At: ${new Date(envelope.timestamp * 1000)}`);
-} else {
-  console.log(`Invalid: ${result.reason}`);
-}
+const valid = await verify(payload, keyPair.publicKey, signature);
+console.log(valid); // true
 ```
 
-## Using envelope.verify()
+## Features
 
-Every envelope has a built-in verify method:
+- **Cryptographic signing (ML-DSA-44)** - Post-quantum secure signatures per NIST FIPS 204
+- **Policy evaluation** - Server-side policy checks with allow/block/hold decisions
+- **Evidence chain linking** - Sequential signatures with payload hashes for audit trails
+- **Offline verification** - Verify signatures locally without network calls
+
+## API Reference
+
+### generateKeyPair()
+
+Generate a new ML-DSA-44 keypair.
 
 ```typescript
-const envelope = await sign({
-  output: "Transfer $50,000 to account 12345",
-  agentId: "agent-finance-01"
-});
-
-// Later, verify the envelope
-const result = await envelope.verify();
-console.log(result.valid); // true if untampered
+const keyPair = await generateKeyPair();
+// keyPair.publicKey: Uint8Array (1312 bytes)
+// keyPair.secretKey: Uint8Array (2560 bytes)
 ```
 
-## Execution Record
+### sign(payload, secretKey)
 
-Each signed output produces a verifiable execution record:
+Sign a message with ML-DSA-44.
 
-```
-agent_id:      agent-finance-01
-timestamp:     2026-01-18T12:34:56Z
-sequence:      1
-payload_hash:  SHA-256:abc123...
-signature:     ML-DSA-44:xyz789...
-status:        VERIFIED
+```typescript
+const signature = await sign(payload, keyPair.secretKey);
+// signature: Uint8Array (2420 bytes)
 ```
 
-## API
+### verify(payload, publicKey, signature)
 
-### sign(options)
+Verify a signature with ML-DSA-44.
 
-Sign an agent output.
+```typescript
+const valid = await verify(payload, keyPair.publicKey, signature);
+// valid: boolean
+```
+
+### signEnvelope(options)
+
+Sign an agent output and produce a cryptographic envelope.
 
 ```typescript
 interface SignOptions {
@@ -86,15 +87,15 @@ interface SignOptions {
   context?: Record<string, unknown>;  // Optional metadata
 }
 
-const envelope = await sign(options);
+const envelope = await signEnvelope(options);
 ```
 
-### verify(envelope)
+### verifyEnvelope(envelope)
 
 Verify a signed envelope.
 
 ```typescript
-const result = await verify(envelope);
+const result = await verifyEnvelope(envelope);
 
 interface VerifyResult {
   valid: boolean;           // True if signature is valid
@@ -128,35 +129,21 @@ interface Envelope {
 }
 ```
 
-## Features
+## Configuration
 
-- **Post-Quantum Security**: ML-DSA-44 (FIPS 204) signatures
-- **Offline Verification**: No network required
-- **Tamper Detection**: Any modification invalidates signature
-- **Framework Agnostic**: Works with any AI framework
-- **TypeScript Native**: Full type definitions included
-
-## Pricing Tiers
-
-| Tier | Price | Agents | Signatures | Retention |
-|------|-------|--------|------------|-----------|
-| **Free** | $0 | 5 | 1,000/day | 7 days |
-| **Pro** | $1,499/mo | Unlimited | Unlimited | 1 year |
-| **Enterprise** | Custom | Unlimited | Unlimited | 7 years |
-
-*Annual billing: $1,249/mo (save $3,000/year)*
-
-All new signups get a **14-day free trial** of Pro.
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `MOSS_API_KEY` | API key for enterprise features | None |
+| `MOSS_API_URL` | Custom API endpoint | `https://api.mosscomputing.com` |
 
 ## Links
 
-- [mosscomputing.com](https://mosscomputing.com) - Project site
-- [dev.mosscomputing.com](https://dev.mosscomputing.com) - Developer Console
-- [audit.mosscomputing.com](https://audit.mosscomputing.com) - Authority Vault (compliance)
-- [moss-sdk (Python)](https://pypi.org/project/moss-sdk/) - Python SDK
+- Documentation: [docs.mosscomputing.com/sdks/typescript](https://docs.mosscomputing.com/sdks/typescript)
+- Dashboard: [app.mosscomputing.com](https://app.mosscomputing.com)
+- Python SDK: [pypi.org/project/moss-sdk](https://pypi.org/project/moss-sdk/)
 
 ## License
 
-MIT - See LICENSE file.
+Business Source License 1.1 - See LICENSE file.
 
-Copyright (c) 2025 IAMPASS Inc.
+Copyright (c) 2025-2026 IAMPASS Inc.
