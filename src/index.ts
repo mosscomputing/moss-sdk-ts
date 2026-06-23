@@ -130,13 +130,15 @@ const MOSS_API_KEY = typeof process !== 'undefined'
   ? process.env?.MOSS_API_KEY
   : undefined;
 
-// In-memory storage for demo/development
-// In production, use secure key storage
+// In-memory storage for development/demo ONLY.
+// Keys are zeroed on removal. For production, use secure key management
+// (vault, KMS, or hardware security module). Keys have no TTL — clear
+// explicitly with clearSubjects() when done.
 const subjects = new Map<string, Subject>();
 const sequences = new Map<string, number>();
 
-// Certification cache
-const certificationCache = new Map<string, boolean>();
+// Certification cache with 5-minute TTL
+const certificationCache = new Map<string, { valid: boolean; expires: number }>();
 
 // =============================================================================
 // Cryptographic Functions (ML-DSA-44 / FIPS 204)
@@ -469,13 +471,16 @@ export async function handshake(agentId: string): Promise<HandshakeResult> {
     };
   }
 
-  // Check cache
-  if (certificationCache.has(agentId)) {
-    const isCertified = certificationCache.get(agentId)!;
+  // Check cache (with TTL)
+  const cached = certificationCache.get(agentId);
+  if (cached && cached.expires > Date.now()) {
     return {
-      isCertified,
-      certificationStatus: isCertified ? 'certified' : 'unregistered',
+      isCertified: cached.valid,
+      certificationStatus: cached.valid ? 'certified' : 'unregistered',
     };
+  }
+  if (cached) {
+    certificationCache.delete(agentId); // expired
   }
 
   try {
@@ -503,8 +508,8 @@ export async function handshake(agentId: string): Promise<HandshakeResult> {
     const data = await response.json();
     const isCertified = data.is_certified || false;
     
-    // Cache the result
-    certificationCache.set(agentId, isCertified);
+    // Cache the result with 5-minute TTL
+    certificationCache.set(agentId, { valid: isCertified, expires: Date.now() + 5 * 60 * 1000 });
 
     return {
       isCertified,
@@ -525,7 +530,11 @@ export async function handshake(agentId: string): Promise<HandshakeResult> {
  * Check if an agent is certified (from cache).
  */
 export function isAgentCertified(agentId: string): boolean {
-  return certificationCache.get(agentId) || false;
+  const cached = certificationCache.get(agentId);
+  if (!cached || cached.expires <= Date.now()) {
+    return false;
+  }
+  return cached.valid;
 }
 
 /**
@@ -533,6 +542,32 @@ export function isAgentCertified(agentId: string): boolean {
  */
 export function clearCertificationCache(): void {
   certificationCache.clear();
+}
+
+/**
+ * Remove a subject and zero its secret key from memory.
+ * Call this when done with a key to prevent memory extraction.
+ */
+export function removeSubject(subjectId: string): boolean {
+  const subject = subjects.get(subjectId);
+  if (subject) {
+    // Zero the secret key bytes before removing
+    subject.secretKey.fill(0);
+    subjects.delete(subjectId);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Remove all subjects and zero their secret keys.
+ */
+export function clearSubjects(): void {
+  for (const subject of subjects.values()) {
+    subject.secretKey.fill(0);
+  }
+  subjects.clear();
+  sequences.clear();
 }
 
 /**
