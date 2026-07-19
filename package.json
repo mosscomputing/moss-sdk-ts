@@ -24,6 +24,7 @@
     "clean": "rm -rf dist",
     "gen:openapi": "bash scripts/gen-openapi.sh",
     "gen:openapi:check": "bash scripts/gen-openapi.sh --check",
+    "mock": "bash scripts/mock.sh",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -52,6 +53,7 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
+    "@stoplight/prism-cli": "^5.14.2",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
