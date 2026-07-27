@@ -107,8 +107,15 @@ export class Client {
   private readonly fetchImpl: typeof fetch;
 
   // Resource namespaces (assigned by index.ts to avoid a circular import).
+  // Partner SDK namespaces:
   customers!: import('./customers.js').CustomersService;
-  compliance!: import('./compliance.js').ComplianceService;
+  compliance!: import('./compliance.js').ComplianceService | import('../customer/compliance.js').ComplianceService;
+
+  // Customer SDK namespaces (assigned by customer/index.ts):
+  agents!: import('../customer/agents.js').AgentsService;
+  capabilities!: import('../customer/capabilities.js').CapabilitiesService;
+  policies!: import('../customer/policies.js').PoliciesService;
+  audit!: import('../customer/audit.js').AuditService;
 
   constructor(cfg: Config) {
     if (!cfg.token) throw new Error('moss: Config.token is required');
