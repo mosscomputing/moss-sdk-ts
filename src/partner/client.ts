@@ -121,7 +121,12 @@ export class Client {
     if (!cfg.token) throw new Error('moss: Config.token is required');
     this.cfg = cfg;
     this.token = cfg.token;
-    this.baseURL = (cfg.baseURL ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+    // Remove trailing slashes safely (avoid ReDoS with regex on user input)
+    let base = cfg.baseURL ?? DEFAULT_BASE_URL;
+    while (base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
+    this.baseURL = base;
     this.timeoutMs = cfg.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.maxRetries = cfg.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.persona = cfg.persona ?? inferPersona(cfg.token);

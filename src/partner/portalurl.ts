@@ -50,7 +50,10 @@ export function portalUrl(
   if (!customerID) throw new Error('moss: portalUrl: customer_id is required');
   if (!opts.token) throw new Error('moss: portalUrl: token is required');
   let base = opts.portalBase ?? DEFAULT_PORTAL_BASE_URL;
-  base = base.replace(/\/+$/, '');
+  // Remove trailing slashes safely (avoid ReDoS with regex on user input)
+  while (base.endsWith('/')) {
+    base = base.slice(0, -1);
+  }
 
   // Build params as a multi-map (key → list of values). We always set single
   // values per key here, but the canonical signing iterates in sorted-key
