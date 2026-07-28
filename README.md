@@ -2,7 +2,7 @@
 
 MOSS SDK for TypeScript - cryptographic signing for AI agent actions.
 
-[![npm](https://img.shields.io/npm/v/@moss/sdk)](https://www.npmjs.com/package/@moss/sdk)
+[![npm](https://img.shields.io/npm/v/moss-signing)](https://www.npmjs.com/package/moss-signing)
 
 ## Overview
 
