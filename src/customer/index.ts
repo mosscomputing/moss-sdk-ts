@@ -8,17 +8,17 @@
  *
  *   import { newCustomerClient } from '@moss/sdk/customer';
  *   const client = newCustomerClient({ token: process.env.MOSS_CUSTOMER_TOKEN });
- *   const agent = await client.agents.create({
- *     name: 'Support Bot',
- *     capabilities: { permittedActions: ['chat'] },
- *   });
- *   console.log(agent.id, agent.initialCapabilityToken);
+ *   const result = await client.agents.revoke({ targetId: 'agent-uuid' });
+ *   const cap = await client.capabilities.create({ agentId: '...', ... });
+ *   const status = await client.compliance.status();
+ *   const eval = await client.policies.evaluate({ action: 'data_exfiltration' });
+ *   const logs = await client.audit.query({ limit: 10 });
  *
  * Resource namespaces:
- *   - agents: create / list / get / suspend / reactivate / revoke
- *   - capabilities: create (issue scoped capability tokens)
+ *   - agents: revoke (via POST /v1/revoke; CRUD requires internal RBAC auth)
+ *   - capabilities: create (issue scoped capability tokens via POST /v1/capabilities)
  *   - compliance: status / frameworks / report
- *   - policies: list / create / evaluate
+ *   - policies: evaluate (dry-run; CRUD requires internal RBAC auth)
  *   - audit: query / verify / chain
  *
  * Reuses the same Client, error hierarchy, and retry logic from the Partner SDK.
@@ -70,19 +70,9 @@ export type { Headers, Body } from '../partner/errors.js';
 
 export { AgentsService } from './agents.js';
 export type {
-  Agent,
   AgentStatus,
-  CreateAgentRequest,
-  UpdateAgentRequest,
-  SuspendAgentRequest,
-  ReactivateAgentRequest,
   RevokeAgentRequest,
-  ListAgentsOptions,
-  AgentListResponse,
-  BehavioralFingerprint,
-  AgentCapabilities,
-  BehavioralBounds,
-  ModelConfig,
+  RevokeAgentResponse,
 } from './agents.js';
 
 export { CapabilitiesService } from './capabilities.js';
@@ -104,15 +94,10 @@ export type {
 
 export { PoliciesService } from './policies.js';
 export type {
-  Policy,
-  PolicyRule,
-  CreatePolicyRequest,
-  UpdatePolicyRequest,
+  PolicyAction,
+  PolicySeverity,
   PolicyEvaluation,
   EvaluatePolicyRequest,
-  ListPoliciesOptions,
-  PolicyListResponse,
-  PolicySource,
 } from './policies.js';
 
 export { AuditService } from './audit.js';

@@ -3,6 +3,9 @@
  *
  * Issues scoped capability tokens for agents with fine-grained permissions,
  * resource scope, and execution constraints.
+ *
+ * Uses POST /v1/capabilities (customer token auth via get_customer_org).
+ * The path is /v1/capabilities, NOT /v1/customer/capabilities.
  */
 
 import type { Client } from '../partner/client.js';
@@ -44,6 +47,11 @@ export class CapabilitiesService {
 
   /**
    * Create a scoped capability token for an agent.
+   * POST /v1/capabilities
+   *
+   * Issues a cap_ token that attenuates against the agent's registered
+   * capabilities. Refuses suspended/foreign/nonexistent agents. Bounded
+   * by the customer's capability_tokens_per_hour budget.
    */
   async create(
     ctx: RequestContext | undefined,
@@ -52,7 +60,7 @@ export class CapabilitiesService {
   ): Promise<CapabilityToken> {
     const res = await this.client.do(ctx, {
       method: 'POST',
-      path: '/v1/customer/capabilities',
+      path: '/v1/capabilities',
       body: req,
       idempotencyKey,
     });

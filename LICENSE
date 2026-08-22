@@ -1,21 +1,40 @@
-MIT License
+MOSS SOFTWARE LICENSE
+Copyright (c) 2025 IAMPASS Inc. All Rights Reserved.
 
-Copyright (c) 2025 IAMPASS Inc.
+1. GRANT OF LICENSE
+   IAMPASS grants you a non-exclusive, non-transferable, revocable 
+   license to use MOSS software subject to these terms.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+2. FREE TIER
+   You may use MOSS Free at no cost for:
+   - Development and testing
+   - Production use within documented free tier limits
+   
+3. RESTRICTIONS
+   You may NOT:
+   - Copy, modify, merge, publish, distribute, sublicense, or sell
+   - Reverse engineer, decompile, or disassemble
+   - Remove or alter any proprietary notices
+   - Use to create competing products or services
+   - Transfer or assign your rights
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+4. COMMERCIAL LICENSE
+   Use beyond Free Tier limits requires a commercial license.
+   Contact: sales@iampass.com
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+5. SOURCE AUDIT
+   Enterprise customers may request source code access for security
+   audit under NDA. Contact: security@iampass.com
+
+6. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+
+7. LIMITATION OF LIABILITY
+   IAMPASS SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM USE.
+   TOTAL LIABILITY SHALL NOT EXCEED AMOUNTS PAID IN TWELVE MONTHS.
+
+8. TERMINATION
+   IAMPASS may terminate immediately if you breach any term.
+
+For licensing: legal@iampass.com
+For sales: sales@iampass.com
