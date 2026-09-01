@@ -29,6 +29,7 @@ import type { Config } from '../partner/client.js';
 import { AgentsService } from './agents.js';
 import { CapabilitiesService } from './capabilities.js';
 import { ComplianceService } from './compliance.js';
+import { PassportsService } from './passports.js';
 import { PoliciesService } from './policies.js';
 import { AuditService } from './audit.js';
 
@@ -71,6 +72,8 @@ export type { Headers, Body } from '../partner/errors.js';
 export { AgentsService } from './agents.js';
 export type {
   AgentStatus,
+  Agent,
+  CreateAgentRequest,
   RevokeAgentRequest,
   RevokeAgentResponse,
 } from './agents.js';
@@ -109,9 +112,18 @@ export type {
   ProvenanceChain,
 } from './audit.js';
 
+export { PassportsService } from './passports.js';
+export type {
+  Passport,
+  PassportStatus,
+  PassportListItem,
+  PassportListResponse,
+  RenewPassportRequest,
+} from './passports.js';
+
 /**
  * newCustomerClient constructs a Customer SDK Client and wires its resource
- * namespaces (agents, capabilities, compliance, policies, audit).
+ * namespaces (agents, capabilities, compliance, policies, audit, passports).
  * Convenience wrapper around `new Client(cfg)`.
  */
 export function newCustomerClient(cfg: Config): Client {
@@ -121,5 +133,6 @@ export function newCustomerClient(cfg: Config): Client {
   c.compliance = new ComplianceService(c);
   c.policies = new PoliciesService(c);
   c.audit = new AuditService(c);
+  c.passports = new PassportsService(c);
   return c;
 }

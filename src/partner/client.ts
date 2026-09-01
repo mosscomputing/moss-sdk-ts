@@ -116,6 +116,7 @@ export class Client {
   capabilities!: import('../customer/capabilities.js').CapabilitiesService;
   policies!: import('../customer/policies.js').PoliciesService;
   audit!: import('../customer/audit.js').AuditService;
+  passports!: import('../customer/passports.js').PassportsService;
 
   constructor(cfg: Config) {
     if (!cfg.token) throw new Error('moss: Config.token is required');

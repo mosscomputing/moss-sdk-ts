@@ -29,8 +29,63 @@ export interface RevokeAgentResponse {
   };
 }
 
+export interface CreateAgentRequest {
+  /** Agent identifier (unique within the org) */
+  subject: string;
+  /** Optional human-readable name */
+  display_name?: string;
+  /** Optional list of agent capabilities */
+  capabilities?: string[];
+  /** Optional tags */
+  tags?: string[];
+  /** Optional metadata */
+  metadata?: Record<string, unknown>;
+}
+
+export interface Agent {
+  id: string;
+  org_id: string;
+  subject: string;
+  display_name: string | null;
+  capabilities: string[];
+  status: AgentStatus;
+  created_at: string;
+  initial_capability_token?: {
+    token: string;
+    token_id: string;
+    execution_limit: number;
+    expires_at: string;
+    capabilities: string[];
+  };
+}
+
 export class AgentsService {
   constructor(private readonly client: Client) {}
+
+  /**
+   * Register a new agent within the caller's organization (MOSS 2.0).
+   *
+   * Uses POST /v1/agents. Available via customer tokens (cust_) for
+   * self-service users on passport/pro/team tiers. Returns the agent
+   * record and an initial capability token (cap_).
+   */
+  async create(
+    ctx: RequestContext | undefined,
+    req: CreateAgentRequest
+  ): Promise<Agent> {
+    const res = await this.client.do(ctx, {
+      method: 'POST',
+      path: '/v1/agents',
+      body: {
+        subject: req.subject,
+        display_name: req.display_name,
+        capabilities: req.capabilities,
+        tags: req.tags,
+        metadata: req.metadata,
+      },
+    });
+    return JSON.parse(res.body);
+  }
 
   /**
    * Permanently revoke an agent within the caller's organization.

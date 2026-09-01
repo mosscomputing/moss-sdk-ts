@@ -20,14 +20,19 @@
       "require": "./dist/customer/index.js",
       "import": "./dist/customer/index.mjs",
       "types": "./dist/customer/index.d.ts"
+    },
+    "./passport": {
+      "require": "./dist/passport/index.js",
+      "import": "./dist/passport/index.mjs",
+      "types": "./dist/passport/index.d.ts"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/uninstall.ts src/partner/index.ts src/customer/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts src/uninstall.ts src/partner/index.ts src/customer/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/uninstall.ts src/partner/index.ts src/customer/index.ts src/passport/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts src/uninstall.ts src/partner/index.ts src/customer/index.ts src/passport/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts",
